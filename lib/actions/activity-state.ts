@@ -29,11 +29,17 @@ export async function updateEventStartTime(
     return { success: false, error: "請選擇開放時間" };
   }
 
+  // datetime-local gives "2026-03-14T09:30" without timezone.
+  // Append Asia/Taipei offset so it's interpreted correctly on any server.
+  const isoWithTz = eventStartAt.includes("+") || eventStartAt.includes("Z")
+    ? eventStartAt
+    : `${eventStartAt}+08:00`;
+
   const supabase = createServerSupabaseClient();
   const { error } = await supabase
     .from("activity_state")
     .update({
-      event_start_at: new Date(eventStartAt).toISOString(),
+      event_start_at: new Date(isoWithTz).toISOString(),
       updated_by_staff_id: session.selectedStaffId,
       updated_at: new Date().toISOString(),
     })

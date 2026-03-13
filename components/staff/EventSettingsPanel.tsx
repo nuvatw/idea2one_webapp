@@ -59,6 +59,7 @@ export default function EventSettingsPanel({
 
         <form action={formAction} className="flex gap-2">
           <input
+            key={currentEventStartTime ?? ""}
             type="datetime-local"
             name="event_start_at"
             defaultValue={defaultValue}
