@@ -46,8 +46,7 @@ function StatCard({ label, value, color, onClick }: StatCardProps) {
 }
 
 /**
- * StaffDashboardStatGrid — 顯示六項指標（可點擊跳轉對應 tab）
- * Per spec: 已報到/未報到/已領午餐/未領午餐/問題總數/待回答數
+ * StaffDashboardStatGrid — 分成三個 section：報到、便當、問題
  */
 export default function StaffDashboardStatGrid({
   stats,
@@ -60,13 +59,33 @@ export default function StaffDashboardStatGrid({
   };
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-      <StatCard label="已報到" value={stats.checked_in_count} color="green" onClick={() => goToTab("attendance")} />
-      <StatCard label="未報到" value={stats.not_checked_in_count} color="red" onClick={() => goToTab("attendance")} />
-      <StatCard label="已領午餐" value={stats.lunch_picked_up_count} color="green" onClick={() => goToTab("lunch")} />
-      <StatCard label="未領午餐" value={stats.lunch_not_picked_up_count} color="amber" onClick={() => goToTab("lunch")} />
-      <StatCard label="問題總數" value={stats.total_questions} color="blue" onClick={() => goToTab("qna")} />
-      <StatCard label="待回答" value={stats.pending_questions} color="red" onClick={() => goToTab("qna")} />
+    <div className="space-y-5">
+      {/* 報到 */}
+      <section>
+        <h3 className="mb-2 text-sm font-semibold text-warm-700">報到</h3>
+        <div className="grid grid-cols-2 gap-3">
+          <StatCard label="已報到" value={stats.checked_in_count} color="green" onClick={() => goToTab("attendance")} />
+          <StatCard label="未報到" value={stats.not_checked_in_count} color="red" onClick={() => goToTab("attendance")} />
+        </div>
+      </section>
+
+      {/* 便當 */}
+      <section>
+        <h3 className="mb-2 text-sm font-semibold text-warm-700">便當</h3>
+        <div className="grid grid-cols-2 gap-3">
+          <StatCard label="已領午餐" value={stats.lunch_picked_up_count} color="green" onClick={() => goToTab("lunch")} />
+          <StatCard label="未領午餐" value={stats.lunch_not_picked_up_count} color="amber" onClick={() => goToTab("lunch")} />
+        </div>
+      </section>
+
+      {/* 問題 */}
+      <section>
+        <h3 className="mb-2 text-sm font-semibold text-warm-700">問題</h3>
+        <div className="grid grid-cols-2 gap-3">
+          <StatCard label="問題總數" value={stats.total_questions} color="blue" onClick={() => goToTab("qna")} />
+          <StatCard label="待回答" value={stats.pending_questions} color="red" onClick={() => goToTab("qna")} />
+        </div>
+      </section>
     </div>
   );
 }
