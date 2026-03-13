@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { AgendaItemSummary } from "@/types/dto";
 import MarkdownRenderer from "@/lib/markdown/renderer";
 
@@ -28,7 +28,24 @@ export default function AgendaTimeline({
   const currentIndex = items.findIndex((item) => item.id === currentAgendaId);
 
   return (
-    <div className="relative">
+    <div className="relative pl-[30px]">
+      {/* Continuous vertical line behind everything */}
+      <div
+        className="absolute left-[11px] top-0 bottom-0 w-[2px] bg-warm-200"
+        aria-hidden
+      />
+      {/* Filled portion of line up to and including current item */}
+      {currentIndex >= 0 && (
+        <div
+          className="absolute left-[11px] top-0 w-[2px] bg-primary-400 transition-all duration-500"
+          style={{
+            /* rough: each item ~72px, current dot is at center */
+            height: `calc(${currentIndex} * 72px + 12px)`,
+          }}
+          aria-hidden
+        />
+      )}
+
       {items.map((item, index) => {
         const isCurrent = item.id === currentAgendaId;
         const isPast = currentIndex >= 0 && index < currentIndex;
@@ -36,23 +53,26 @@ export default function AgendaTimeline({
         const isLast = index === items.length - 1;
 
         return (
-          <div key={item.id} className="relative flex gap-4">
-            {/* Timeline column */}
-            <div className="flex flex-col items-center">
-              {/* Dot */}
-              <div
-                className={`relative z-10 flex items-center justify-center rounded-full transition-all ${
-                  isCurrent
-                    ? "h-6 w-6 bg-primary-500 shadow-md shadow-primary-500/30"
-                    : isPast
-                      ? "h-4 w-4 bg-primary-400"
-                      : "h-4 w-4 border-2 border-warm-300 bg-surface-raised"
-                }`}
-              >
-                {isCurrent && (
-                  <span className="absolute inset-0 rounded-full bg-primary-500 opacity-30 animate-live" />
-                )}
-                {isPast && (
+          <div
+            key={item.id}
+            className={`relative ${isLast ? "" : "mb-3"}`}
+          >
+            {/* Timeline dot — positioned on the vertical line */}
+            <div
+              className="absolute z-10"
+              style={{ left: "-30px", top: "50%", transform: "translateY(-50%)" }}
+              aria-hidden
+            >
+              {isCurrent ? (
+                /* Double-ring active dot */
+                <span className="relative flex h-6 w-6 items-center justify-center">
+                  <span className="absolute inset-0 rounded-full border-[2.5px] border-primary-500 bg-transparent" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-primary-500" />
+                  <span className="absolute inset-0 rounded-full border-2 border-primary-400 opacity-40 animate-live" />
+                </span>
+              ) : isPast ? (
+                /* Filled dot for past items */
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-400">
                   <svg
                     className="h-2.5 w-2.5 text-white"
                     viewBox="0 0 24 24"
@@ -62,81 +82,137 @@ export default function AgendaTimeline({
                   >
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
-                )}
-              </div>
-              {/* Connecting line */}
-              {!isLast && (
-                <div
-                  className={`w-0.5 flex-1 ${
-                    isPast || isCurrent ? "bg-primary-200" : "bg-warm-200"
-                  }`}
-                />
+                </span>
+              ) : (
+                /* Hollow ring for future items */
+                <span className="flex h-5 w-5 items-center justify-center rounded-full border-[2.5px] border-warm-300 bg-surface" />
               )}
             </div>
 
             {/* Content card */}
-            <div className={`flex-1 ${isLast ? "" : "pb-4"}`}>
-              <button
-                type="button"
-                onClick={() => setExpandedId(isExpanded ? null : item.id)}
-                className={`w-full rounded-2xl border p-4 text-left transition-all ${
+            <button
+              type="button"
+              onClick={() => setExpandedId(isExpanded ? null : item.id)}
+              className={`
+                w-full rounded-2xl p-4 text-left
+                transition-all duration-300 ease-out
+                ${
                   isCurrent
-                    ? "border-primary-200 bg-primary-50 shadow-sm"
+                    ? "bg-primary-500 shadow-lg shadow-primary-500/20 scale-[1.02] origin-left"
                     : isPast
-                      ? "border-warm-100 bg-surface-raised opacity-70"
-                      : "border-warm-100 bg-surface-raised hover:border-warm-200 hover:shadow-xs"
-                }`}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p
-                      className={`text-xs font-medium ${
-                        isCurrent ? "text-primary-600" : "text-warm-400"
-                      }`}
-                    >
-                      {item.time_label}
-                    </p>
-                    <h3
-                      className={`mt-0.5 text-base font-bold ${
-                        isCurrent
-                          ? "text-primary-700"
-                          : isPast
-                            ? "text-warm-500"
-                            : "text-warm-800"
-                      }`}
-                    >
-                      {item.stage_name}
-                    </h3>
-                  </div>
-                  {isCurrent && (
-                    <span className="flex-shrink-0 rounded-full bg-primary-500 px-2.5 py-1 text-[10px] font-bold text-white">
-                      進行中
-                    </span>
-                  )}
-                </div>
+                      ? "bg-surface-raised/70 hover:bg-surface-raised"
+                      : "bg-surface-raised hover:shadow-sm"
+                }
+              `}
+            >
+              {/* Title row: title left, time right */}
+              <div className="flex items-center justify-between gap-3">
+                <h3
+                  className={`text-base font-bold leading-snug ${
+                    isCurrent
+                      ? "text-white"
+                      : isPast
+                        ? "text-warm-400"
+                        : "text-warm-800"
+                  }`}
+                >
+                  {item.stage_name}
+                </h3>
+                <span
+                  className={`flex-shrink-0 text-xs font-semibold tabular-nums ${
+                    isCurrent
+                      ? "text-white/80"
+                      : isPast
+                        ? "text-warm-300"
+                        : "text-warm-400"
+                  }`}
+                >
+                  {item.time_label}
+                </span>
+              </div>
 
-                {isExpanded &&
-                  (item.description_markdown || item.notice_markdown) && (
-                    <div className="mt-3 border-t border-warm-100 pt-3">
-                      {item.description_markdown && (
-                        <div className="text-sm text-warm-600">
-                          <MarkdownRenderer
-                            content={item.description_markdown}
-                          />
-                        </div>
-                      )}
-                      {item.notice_markdown && (
-                        <div className="mt-2 rounded-xl border-l-4 border-accent-400 bg-accent-50 p-3 text-sm text-accent-600">
-                          <MarkdownRenderer content={item.notice_markdown} />
-                        </div>
-                      )}
-                    </div>
-                  )}
-              </button>
-            </div>
+              {/* "進行中" pill for current item */}
+              {isCurrent && (
+                <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-bold text-white backdrop-blur-sm">
+                  <span className="h-1.5 w-1.5 rounded-full bg-white animate-live" />
+                  進行中
+                </span>
+              )}
+
+              {/* Expandable description */}
+              <ExpandableContent
+                expanded={isExpanded}
+                isCurrent={isCurrent}
+                description={item.description_markdown}
+                notice={item.notice_markdown}
+              />
+            </button>
           </div>
         );
       })}
+    </div>
+  );
+}
+
+/* ── Animated expandable section ── */
+function ExpandableContent({
+  expanded,
+  isCurrent,
+  description,
+  notice,
+}: {
+  expanded: boolean;
+  isCurrent: boolean;
+  description?: string | null;
+  notice?: string | null;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState(0);
+
+  useEffect(() => {
+    if (ref.current) {
+      setHeight(expanded ? ref.current.scrollHeight : 0);
+    }
+  }, [expanded, description, notice]);
+
+  if (!description && !notice) return null;
+
+  return (
+    <div
+      className="overflow-hidden transition-[max-height,opacity] duration-300 ease-out"
+      style={{
+        maxHeight: expanded ? `${height}px` : "0px",
+        opacity: expanded ? 1 : 0,
+      }}
+    >
+      <div ref={ref} className="pt-3">
+        <div
+          className={`border-t pt-3 ${
+            isCurrent ? "border-white/20" : "border-warm-100"
+          }`}
+        >
+          {description && (
+            <div
+              className={`text-sm ${
+                isCurrent ? "text-white/90" : "text-warm-600"
+              }`}
+            >
+              <MarkdownRenderer content={description} />
+            </div>
+          )}
+          {notice && (
+            <div
+              className={`mt-2 rounded-xl p-3 text-sm ${
+                isCurrent
+                  ? "border-l-4 border-white/40 bg-white/10 text-white/90"
+                  : "border-l-4 border-accent-400 bg-accent-50 text-accent-600"
+              }`}
+            >
+              <MarkdownRenderer content={notice} />
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
