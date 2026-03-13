@@ -1,7 +1,9 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
+import { useTransition } from "react";
 import type { DashboardStats } from "@/types/dto";
+import Spinner from "@/components/shared/Spinner";
 
 interface StaffDashboardStatGridProps {
   stats: DashboardStats;
@@ -45,10 +47,21 @@ export default function StaffDashboardStatGrid({
 }: StaffDashboardStatGridProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const [isNavigating, startTransition] = useTransition();
 
   const goToTab = (tab: string) => {
-    router.push(`${pathname}?tab=${tab}`, { scroll: false });
+    startTransition(() => {
+      router.push(`${pathname}?tab=${tab}`, { scroll: false });
+    });
   };
+
+  if (isNavigating) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Spinner className="h-8 w-8 text-primary-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
