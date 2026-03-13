@@ -64,6 +64,7 @@ export interface StaffAgendaAssignment {
 export interface ActivityState {
   singleton_key: "current";
   current_agenda_item_id: string | null;
+  current_participant_agenda_item_id: string | null;
   event_start_at: string;
   event_end_at: string;
   updated_by_staff_id: string | null;

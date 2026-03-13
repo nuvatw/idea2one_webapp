@@ -5,7 +5,7 @@ import { requireStaffIdentity } from "@/lib/dal/auth-check";
 export const metadata: Metadata = {
   title: "努努後台 — nuva",
 };
-import { getAgendaWithCurrentStage } from "@/lib/dal/agenda";
+import { getAgendaWithCurrentStage, getCurrentParticipantAgendaItemId } from "@/lib/dal/agenda";
 import { getStaffAgendaAssignments } from "@/lib/dal/staff-agenda";
 import { getQuestionsList, getQuestionDetail } from "@/lib/dal/questions";
 import { getDashboardStats } from "@/lib/dal/dashboard";
@@ -17,7 +17,7 @@ import { createServerSupabaseClient } from "@/lib/utils/supabase";
 import { STAGE_SWITCH_ALLOWED_STAFF } from "@/lib/constants";
 import StaffTopBar from "@/components/staff/StaffTopBar";
 import StaffTabShell, { type StaffTab } from "@/components/staff/StaffTabShell";
-import CurrentAgendaSwitcher from "@/components/staff/CurrentAgendaSwitcher";
+import AgendaSettingsPanel from "@/components/staff/AgendaSettingsPanel";
 import StaffAgendaPanel from "@/components/staff/StaffAgendaPanel";
 import QAManagementPanel from "@/components/staff/QAManagementPanel";
 import CsvImportPanel from "@/components/staff/CsvImportPanel";
@@ -49,6 +49,8 @@ export default async function StaffDashboardPage({
 
   const [
     { items: agendaItems, currentAgendaItemId },
+    { items: participantAgendaItems, currentAgendaItemId: participantCurrentFromQuery },
+    currentParticipantAgendaId,
     staffAssignments,
     allQuestions,
     questionDetail,
@@ -60,6 +62,8 @@ export default async function StaffDashboardPage({
     eventStartTime,
   ] = await Promise.all([
     getAgendaWithCurrentStage(),
+    getAgendaWithCurrentStage({ participantOnly: true }),
+    getCurrentParticipantAgendaItemId(),
     getStaffAgendaAssignments(session.selectedStaffId),
     getQuestionsList(),
     selectedQuestionCode
@@ -118,17 +122,22 @@ export default async function StaffDashboardPage({
         <CsvImportPanel />
       </Suspense>
     ),
-    settings: (
+    settings: canSwitchAgenda ? (
       <div className="space-y-6">
-        <CurrentAgendaSwitcher
-          items={staffAgendaItems}
-          currentAgendaId={currentAgendaItemId}
-          canSwitch={canSwitchAgenda}
+        <AgendaSettingsPanel
+          staffItems={staffAgendaItems}
+          participantItems={participantAgendaItems}
+          currentStaffAgendaId={currentAgendaItemId}
+          currentParticipantAgendaId={currentParticipantAgendaId}
         />
         <EventSettingsPanel
           currentEventStartTime={eventStartTime}
-          canEdit={canSwitchAgenda}
+          canEdit
         />
+      </div>
+    ) : (
+      <div className="rounded-xl border border-warm-200 bg-warm-50 p-6 text-center">
+        <p className="text-sm text-warm-500">僅限上哲 / Lily / Asa 使用設定功能</p>
       </div>
     ),
   };

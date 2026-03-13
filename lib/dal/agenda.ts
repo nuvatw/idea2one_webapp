@@ -35,7 +35,7 @@ export async function getAgendaWithCurrentStage(
   // Fetch activity state to get current agenda item id
   const { data: activityState, error: stateError } = await supabase
     .from("activity_state")
-    .select("current_agenda_item_id")
+    .select("current_agenda_item_id, current_participant_agenda_item_id")
     .eq("singleton_key", "current")
     .single();
 
@@ -72,18 +72,30 @@ export async function getAgendaWithCurrentStage(
     return { items: [], currentAgendaItemId: null };
   }
 
-  // For participant view: map current staff item to participant item
-  if (options?.participantOnly && currentAgendaItemId) {
-    // Look up the current staff item's sort_order
-    const { data: currentStaffItem } = await supabase
-      .from("agenda_items")
-      .select("sort_order")
-      .eq("id", currentAgendaItemId)
-      .single();
+  // For participant view: use independent participant agenda pointer if set,
+  // otherwise fall back to mapping from staff item
+  if (options?.participantOnly) {
+    const participantAgendaId =
+      activityState?.current_participant_agenda_item_id ?? null;
 
-    const targetParticipantSort = currentStaffItem
-      ? mapStaffSortToParticipantSort(currentStaffItem.sort_order)
-      : null;
+    let targetParticipantSort: number | null = null;
+
+    if (participantAgendaId) {
+      // Direct participant pointer — find its sort_order
+      const match = (agendaItems ?? []).find((i) => i.id === participantAgendaId);
+      targetParticipantSort = match?.sort_order ?? null;
+    } else if (currentAgendaItemId) {
+      // Fallback: map from staff item
+      const { data: currentStaffItem } = await supabase
+        .from("agenda_items")
+        .select("sort_order")
+        .eq("id", currentAgendaItemId)
+        .single();
+
+      targetParticipantSort = currentStaffItem
+        ? mapStaffSortToParticipantSort(currentStaffItem.sort_order)
+        : null;
+    }
 
     const items: AgendaItemSummary[] = (agendaItems ?? []).map((item) => ({
       id: item.id,
@@ -114,6 +126,26 @@ export async function getAgendaWithCurrentStage(
   }));
 
   return { items, currentAgendaItemId };
+}
+
+/**
+ * Fetch the current participant agenda item ID from activity_state.
+ */
+export async function getCurrentParticipantAgendaItemId(): Promise<string | null> {
+  const supabase = createServerSupabaseClient();
+
+  const { data, error } = await supabase
+    .from("activity_state")
+    .select("current_participant_agenda_item_id")
+    .eq("singleton_key", "current")
+    .single();
+
+  if (error) {
+    console.error("Failed to fetch participant agenda state:", error);
+    return null;
+  }
+
+  return data?.current_participant_agenda_item_id ?? null;
 }
 
 /**
