@@ -12,9 +12,11 @@ import type { QuestionSummary, QuestionDetail } from "@/types/dto";
 import {
   createAnswer,
   updateAnswer,
+  deleteAnswer,
   type CreateAnswerResult,
   type UpdateAnswerResult,
 } from "@/lib/actions/answers";
+import { deleteQuestion } from "@/lib/actions/questions";
 import StatusBadge from "@/components/shared/StatusBadge";
 import MutationTimeoutBanner from "@/components/shared/MutationTimeoutBanner";
 import Spinner from "@/components/shared/Spinner";
@@ -42,6 +44,8 @@ export default function QAManagementPanel({
     useState<QuestionDetail | null>(initialThreadDetail);
   const [threadLoading, setThreadLoading] = useState(false);
   const [editingAnswerId, setEditingAnswerId] = useState<string | null>(null);
+  const [deletingQuestionId, setDeletingQuestionId] = useState<string | null>(null);
+  const [deletingAnswerId, setDeletingAnswerId] = useState<string | null>(null);
 
   // Filter & search
   const filteredQuestions = useMemo(() => {
@@ -87,6 +91,37 @@ export default function QAManagementPanel({
       }
     },
     []
+  );
+
+  // Delete a question
+  const handleDeleteQuestion = useCallback(async (questionId: string) => {
+    if (!confirm("確定要刪除此問題及所有回覆嗎？")) return;
+    setDeletingQuestionId(questionId);
+    try {
+      const result = await deleteQuestion(questionId);
+      if (result.success) {
+        setSelectedThread(null);
+      }
+    } finally {
+      setDeletingQuestionId(null);
+    }
+  }, []);
+
+  // Delete an answer
+  const handleDeleteAnswer = useCallback(
+    async (answerId: string) => {
+      if (!confirm("確定要刪除此回覆嗎？")) return;
+      setDeletingAnswerId(answerId);
+      try {
+        const result = await deleteAnswer(answerId);
+        if (result.success && selectedThread) {
+          handleSelectQuestion(selectedThread.question_code);
+        }
+      } finally {
+        setDeletingAnswerId(null);
+      }
+    },
+    [selectedThread, handleSelectQuestion]
   );
 
   // Pre-select if selectedQuestionCode is provided
@@ -196,18 +231,28 @@ export default function QAManagementPanel({
           <div className="rounded-xl border border-warm-200 bg-surface-raised shadow-xs">
             {/* Thread header */}
             <div className="border-b border-warm-200 p-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-primary-600">
-                  {selectedThread.question_code}
-                </span>
-                <StatusBadge
-                  variant={selectedThread.status === "answered" ? "answered" : "pending"}
-                />
-                {selectedThread.source === "ai_handoff" && (
-                  <span className="rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-700">
-                    AI 轉問
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-primary-600">
+                    {selectedThread.question_code}
                   </span>
-                )}
+                  <StatusBadge
+                    variant={selectedThread.status === "answered" ? "answered" : "pending"}
+                  />
+                  {selectedThread.source === "ai_handoff" && (
+                    <span className="rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-700">
+                      AI 轉問
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteQuestion(selectedThread.id)}
+                  disabled={deletingQuestionId === selectedThread.id}
+                  className="min-h-[44px] min-w-[44px] text-xs text-danger-600 hover:text-danger-700 disabled:opacity-50"
+                >
+                  {deletingQuestionId === selectedThread.id ? "刪除中..." : "刪除問題"}
+                </button>
               </div>
               <p className="mt-2 whitespace-pre-wrap text-sm text-warm-700">
                 {selectedThread.content}
@@ -259,13 +304,23 @@ export default function QAManagementPanel({
                                 </span>
                               )}
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => setEditingAnswerId(answer.id)}
-                              className="min-h-[44px] min-w-[44px] text-xs text-primary-600 hover:text-primary-700"
-                            >
-                              編輯
-                            </button>
+                            <div className="flex gap-1">
+                              <button
+                                type="button"
+                                onClick={() => setEditingAnswerId(answer.id)}
+                                className="min-h-[44px] min-w-[44px] text-xs text-primary-600 hover:text-primary-700"
+                              >
+                                編輯
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteAnswer(answer.id)}
+                                disabled={deletingAnswerId === answer.id}
+                                className="min-h-[44px] min-w-[44px] text-xs text-danger-600 hover:text-danger-700 disabled:opacity-50"
+                              >
+                                {deletingAnswerId === answer.id ? "刪除中..." : "刪除"}
+                              </button>
+                            </div>
                           </div>
                         </>
                       )}

@@ -1,13 +1,18 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireParticipantSession } from "@/lib/dal/auth-check";
+import { requireParticipantSession, requireStaffIdentity } from "@/lib/dal/auth-check";
 import { createServerSupabaseClient } from "@/lib/utils/supabase";
 import { QUESTION_CODE_PREFIX } from "@/lib/constants";
 
 export interface CreateQuestionResult {
   success: boolean;
   question_code?: string;
+  error?: string;
+}
+
+export interface DeleteQuestionResult {
+  success: boolean;
   error?: string;
 }
 
@@ -107,4 +112,47 @@ export async function createQuestion(
   }
 
   return { success: false, error: "發問失敗，請稍後再試" };
+}
+
+/**
+ * Server Action: Delete a question and all its answers.
+ * Only callable by authenticated staff.
+ */
+export async function deleteQuestion(
+  questionId: string
+): Promise<DeleteQuestionResult> {
+  await requireStaffIdentity();
+
+  if (!questionId) {
+    return { success: false, error: "缺少問題 ID" };
+  }
+
+  const supabase = createServerSupabaseClient();
+
+  // Delete all answers first (foreign key constraint)
+  const { error: deleteAnswersError } = await supabase
+    .from("answers")
+    .delete()
+    .eq("question_id", questionId);
+
+  if (deleteAnswersError) {
+    console.error("Failed to delete answers:", deleteAnswersError);
+    return { success: false, error: "刪除失敗，請稍後再試" };
+  }
+
+  // Delete the question
+  const { error: deleteError } = await supabase
+    .from("questions")
+    .delete()
+    .eq("id", questionId);
+
+  if (deleteError) {
+    console.error("Failed to delete question:", deleteError);
+    return { success: false, error: "刪除失敗，請稍後再試" };
+  }
+
+  revalidatePath("/qa");
+  revalidatePath("/staff");
+
+  return { success: true };
 }

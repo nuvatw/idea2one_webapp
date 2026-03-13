@@ -14,6 +14,11 @@ export interface UpdateAnswerResult {
   error?: string;
 }
 
+export interface DeleteAnswerResult {
+  success: boolean;
+  error?: string;
+}
+
 /**
  * Server Action: Create a new answer on a question.
  * Only callable by authenticated staff with identity.
@@ -128,6 +133,66 @@ export async function updateAnswer(
   if (updateError) {
     console.error("Failed to update answer:", updateError);
     return { success: false, error: "更新失敗，請稍後再試" };
+  }
+
+  revalidatePath("/qa");
+  revalidatePath("/staff");
+
+  return { success: true };
+}
+
+/**
+ * Server Action: Delete an answer.
+ * Only callable by authenticated staff.
+ * If this is the last answer on a question, resets question status to 'pending'.
+ */
+export async function deleteAnswer(
+  answerId: string
+): Promise<DeleteAnswerResult> {
+  await requireStaffIdentity();
+
+  if (!answerId) {
+    return { success: false, error: "缺少回覆 ID" };
+  }
+
+  const supabase = createServerSupabaseClient();
+
+  // Get the answer to find its question_id
+  const { data: answer, error: fetchError } = await supabase
+    .from("answers")
+    .select("id, question_id")
+    .eq("id", answerId)
+    .single();
+
+  if (fetchError || !answer) {
+    return { success: false, error: "找不到此回覆" };
+  }
+
+  // Delete the answer
+  const { error: deleteError } = await supabase
+    .from("answers")
+    .delete()
+    .eq("id", answerId);
+
+  if (deleteError) {
+    console.error("Failed to delete answer:", deleteError);
+    return { success: false, error: "刪除失敗，請稍後再試" };
+  }
+
+  // Check if there are remaining answers; if none, revert question to pending
+  const { count } = await supabase
+    .from("answers")
+    .select("*", { count: "exact", head: true })
+    .eq("question_id", answer.question_id);
+
+  if (count === 0) {
+    await supabase
+      .from("questions")
+      .update({
+        status: "pending",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", answer.question_id);
   }
 
   revalidatePath("/qa");
