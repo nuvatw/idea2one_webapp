@@ -1,0 +1,15 @@
+agenda_sort_order,staff_name,duty_label,location,incident_note_markdown
+1,Alice,現場統籌,大廳,確認報到流程順暢
+1,Bob,報到作業,報到處,核對名單
+2,Alice,開場主持,舞台區,
+2,Eve,拍攝開場,舞台前方,
+3,Dave,技術支援,教室 A,學員可能遇到環境設定問題
+3,Frank,場地巡視,全場,確認電源與網路
+4,Carol,午餐發放,餐廳區,確認飲食別再發放
+5,Dave,技術支援,教室 A,
+6,Frank,茶歇佈置,休息區,
+7,Dave,技術支援,教室 A,協助 demo 準備
+8,Alice,Demo 主持,舞台區,控制每組時間
+8,Eve,拍攝 Demo,舞台前方,
+9,Alice,頒獎主持,舞台區,
+10,Frank,場地復原,全場,
