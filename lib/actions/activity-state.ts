@@ -8,6 +8,7 @@ import { STAGE_SWITCH_ALLOWED_STAFF } from "@/lib/constants";
 export interface UpdateEventStartTimeResult {
   success: boolean;
   error?: string;
+  newEventStartAt?: string;
 }
 
 /**
@@ -35,17 +36,21 @@ export async function updateEventStartTime(
     ? eventStartAt
     : `${eventStartAt}+08:00`;
 
+  const savedIso = new Date(isoWithTz).toISOString();
+
   const supabase = createServerSupabaseClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("activity_state")
     .update({
-      event_start_at: new Date(isoWithTz).toISOString(),
+      event_start_at: savedIso,
       updated_by_staff_id: session.selectedStaffId,
       updated_at: new Date().toISOString(),
     })
-    .eq("singleton_key", "current");
+    .eq("singleton_key", "current")
+    .select("event_start_at")
+    .single();
 
-  if (error) {
+  if (error || !data) {
     console.error("Failed to update event start time:", error);
     return { success: false, error: "儲存失敗，請稍後再試" };
   }
@@ -53,5 +58,5 @@ export async function updateEventStartTime(
   revalidatePath("/staff");
   revalidatePath("/home");
 
-  return { success: true };
+  return { success: true, newEventStartAt: data.event_start_at };
 }

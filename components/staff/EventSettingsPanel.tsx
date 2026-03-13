@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState, useEffect } from "react";
 import {
   updateEventStartTime,
   type UpdateEventStartTimeResult,
@@ -25,9 +25,24 @@ export default function EventSettingsPanel({
     FormData
   >(updateEventStartTime, null);
 
-  // Format for datetime-local input (local time)
-  const defaultValue = currentEventStartTime
-    ? toLocalDatetimeString(currentEventStartTime)
+  // Track the current time locally so it updates after a successful save
+  const [trackedTime, setTrackedTime] = useState(currentEventStartTime);
+
+  // When the server action returns a new value, update our local state
+  useEffect(() => {
+    if (state?.success && state.newEventStartAt) {
+      setTrackedTime(state.newEventStartAt);
+    }
+  }, [state]);
+
+  // Also sync if the server prop changes (e.g. from revalidation)
+  useEffect(() => {
+    setTrackedTime(currentEventStartTime);
+  }, [currentEventStartTime]);
+
+  // Format for datetime-local input — always Asia/Taipei
+  const defaultValue = trackedTime
+    ? toTaipeiDatetimeString(trackedTime)
     : "";
 
   return (
@@ -59,7 +74,7 @@ export default function EventSettingsPanel({
 
         <form action={formAction} className="flex gap-2">
           <input
-            key={currentEventStartTime ?? ""}
+            key={trackedTime ?? ""}
             type="datetime-local"
             name="event_start_at"
             defaultValue={defaultValue}
@@ -86,12 +101,18 @@ export default function EventSettingsPanel({
   );
 }
 
-function toLocalDatetimeString(isoString: string): string {
+/**
+ * Convert an ISO timestamp to a datetime-local string in Asia/Taipei (UTC+8).
+ * Uses a fixed +8h offset so it works identically on server (SSR) and client.
+ */
+function toTaipeiDatetimeString(isoString: string): string {
   try {
     const d = new Date(isoString);
-    const offset = d.getTimezoneOffset();
-    const local = new Date(d.getTime() - offset * 60000);
-    return local.toISOString().slice(0, 16);
+    if (isNaN(d.getTime())) return "";
+    // Shift UTC time by +8 hours to get Taipei local time,
+    // then extract the YYYY-MM-DDTHH:MM portion from the ISO string.
+    const taipeiDate = new Date(d.getTime() + 8 * 60 * 60 * 1000);
+    return taipeiDate.toISOString().slice(0, 16);
   } catch {
     return "";
   }
