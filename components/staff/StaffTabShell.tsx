@@ -1,7 +1,8 @@
 "use client";
 
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { type ReactNode, useCallback } from "react";
+import { type ReactNode, useCallback, useTransition } from "react";
+import Spinner from "@/components/shared/Spinner";
 
 export type StaffTab =
   | "dashboard"
@@ -49,6 +50,8 @@ export default function StaffTabShell({ children }: StaffTabShellProps) {
   const router = useRouter();
   const pathname = usePathname();
 
+  const [isNavigating, startTransition] = useTransition();
+
   const currentTab = (searchParams.get("tab") as StaffTab) || "dashboard";
   const validTab = TAB_ORDER.includes(currentTab) ? currentTab : "dashboard";
 
@@ -56,9 +59,11 @@ export default function StaffTabShell({ children }: StaffTabShellProps) {
     (tab: StaffTab) => {
       const params = new URLSearchParams(searchParams.toString());
       params.set("tab", tab);
-      router.push(`${pathname}?${params.toString()}`, { scroll: false });
+      startTransition(() => {
+        router.push(`${pathname}?${params.toString()}`, { scroll: false });
+      });
     },
-    [searchParams, router, pathname]
+    [searchParams, router, pathname, startTransition]
   );
 
   return (
@@ -89,7 +94,13 @@ export default function StaffTabShell({ children }: StaffTabShellProps) {
 
       {/* Tab content */}
       <div className="mx-auto max-w-screen-lg px-4 py-4">
-        {children[validTab]}
+        {isNavigating ? (
+          <div className="flex items-center justify-center py-20">
+            <Spinner className="h-8 w-8 text-primary-500" />
+          </div>
+        ) : (
+          children[validTab]
+        )}
       </div>
     </div>
   );
