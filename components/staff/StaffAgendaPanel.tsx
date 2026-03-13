@@ -46,13 +46,13 @@ export default function StaffAgendaPanel({ assignments }: StaffAgendaPanelProps)
             }`}
           >
             {/* Left: time + stage */}
-            <div className="w-24 shrink-0 border-r border-warm-100 pr-3">
+            <div className="w-36 shrink-0 border-r border-warm-100 pr-3">
               <div className="flex items-center gap-1.5">
                 {a.is_current && (
                   <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-primary-500 animate-live" />
                 )}
                 <span
-                  className={`text-xs font-medium leading-tight ${
+                  className={`text-sm font-medium whitespace-nowrap ${
                     a.is_current ? "text-primary-600" : "text-warm-500"
                   }`}
                 >
@@ -60,7 +60,7 @@ export default function StaffAgendaPanel({ assignments }: StaffAgendaPanelProps)
                 </span>
               </div>
               <p
-                className={`mt-1 text-[11px] leading-tight ${
+                className={`mt-1 text-xs ${
                   a.is_current ? "text-primary-500" : "text-warm-400"
                 }`}
               >
