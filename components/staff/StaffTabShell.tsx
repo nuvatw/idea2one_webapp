@@ -3,6 +3,7 @@
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { type ReactNode, useCallback, useTransition } from "react";
 import Spinner from "@/components/shared/Spinner";
+import { STAGE_SWITCH_ALLOWED_STAFF } from "@/lib/constants";
 
 export type StaffTab =
   | "dashboard"
@@ -36,8 +37,12 @@ const TAB_ORDER: StaffTab[] = [
   "settings",
 ];
 
+/** Tabs only visible to allowed staff (Asa, Lily, 上哲) */
+const ADMIN_ONLY_TABS: StaffTab[] = ["content", "import", "settings"];
+
 interface StaffTabShellProps {
   children: Record<StaffTab, ReactNode>;
+  staffName: string;
 }
 
 /**
@@ -45,7 +50,7 @@ interface StaffTabShellProps {
  * Active tab controlled by ?tab= query param.
  * Per Spec: min hit area 44x44.
  */
-export default function StaffTabShell({ children }: StaffTabShellProps) {
+export default function StaffTabShell({ children, staffName }: StaffTabShellProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -53,7 +58,12 @@ export default function StaffTabShell({ children }: StaffTabShellProps) {
   const [isNavigating, startTransition] = useTransition();
 
   const currentTab = (searchParams.get("tab") as StaffTab) || "dashboard";
-  const validTab = TAB_ORDER.includes(currentTab) ? currentTab : "dashboard";
+  const isAdmin = STAGE_SWITCH_ALLOWED_STAFF.includes(staffName);
+  const visibleTabs = isAdmin
+    ? TAB_ORDER
+    : TAB_ORDER.filter((t) => !ADMIN_ONLY_TABS.includes(t));
+
+  const validTab = visibleTabs.includes(currentTab) ? currentTab : "dashboard";
 
   const setTab = useCallback(
     (tab: StaffTab) => {
@@ -74,7 +84,7 @@ export default function StaffTabShell({ children }: StaffTabShellProps) {
         aria-label="後台功能分頁"
       >
         <div className="mx-auto flex max-w-screen-lg gap-0.5 px-2">
-          {TAB_ORDER.map((tab) => (
+          {visibleTabs.map((tab) => (
             <button
               key={tab}
               type="button"

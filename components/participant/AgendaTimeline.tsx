@@ -74,13 +74,15 @@ export default function AgendaTimeline({
                 /* Filled dot for past items */
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-400">
                   <svg
-                    className="h-2.5 w-2.5 text-white"
+                    className="block h-2.5 w-2.5 text-white"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
-                    strokeWidth={3}
+                    strokeWidth={3.5}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                   >
-                    <polyline points="20 6 9 17 4 12" />
+                    <polyline points="4 12 9 17 20 6" />
                   </svg>
                 </span>
               ) : (
@@ -194,7 +196,9 @@ function ExpandableContent({
           {description && (
             <div
               className={`text-sm ${
-                isCurrent ? "text-white/90" : "text-warm-600"
+                isCurrent
+                  ? "text-white/90 [&_*]:text-white/90"
+                  : "text-warm-600"
               }`}
             >
               <MarkdownRenderer content={description} />
@@ -204,7 +208,7 @@ function ExpandableContent({
             <div
               className={`mt-2 rounded-xl p-3 text-sm ${
                 isCurrent
-                  ? "border-l-4 border-white/40 bg-white/10 text-white/90"
+                  ? "border-l-4 border-white/40 bg-white/10 text-white/90 [&_*]:text-white/90"
                   : "border-l-4 border-accent-400 bg-accent-50 text-accent-600"
               }`}
             >

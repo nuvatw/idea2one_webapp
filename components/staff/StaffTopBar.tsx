@@ -17,6 +17,12 @@ export default function StaffTopBar({ staffName }: StaffTopBarProps) {
         </div>
         <div className="flex gap-2">
           <a
+            href="/home"
+            className="inline-flex items-center justify-center min-h-[44px] rounded-xl border border-primary-200 bg-primary-50 px-3 py-2 text-sm text-primary-600 shadow-xs transition-colors hover:bg-primary-100 hover:text-primary-700"
+          >
+            查看法法模式
+          </a>
+          <a
             href="/staff/select"
             className="inline-flex items-center justify-center min-h-[44px] rounded-xl border border-warm-200 bg-surface-raised px-3 py-2 text-sm text-warm-600 shadow-xs transition-colors hover:bg-warm-50 hover:text-warm-800"
           >

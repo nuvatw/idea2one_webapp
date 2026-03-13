@@ -128,8 +128,11 @@ export default function AIChat() {
                 strokeLinecap="round"
                 strokeLinejoin="round"
               >
-                <path d="M12 2a8 8 0 00-8 8c0 3.4 2.1 6.3 5 7.5V20a1 1 0 001 1h4a1 1 0 001-1v-2.5c2.9-1.2 5-4.1 5-7.5a8 8 0 00-8-8z" />
-                <path d="M9 22h6" />
+                <rect x="3" y="11" width="18" height="10" rx="2" />
+                <circle cx="9" cy="16" r="1" fill="currentColor" stroke="none" />
+                <circle cx="15" cy="16" r="1" fill="currentColor" stroke="none" />
+                <path d="M8 11V7a4 4 0 118 0v4" />
+                <path d="M12 2v1" />
               </svg>
             </div>
             <h3 className="mb-1 text-lg font-bold text-warm-800">你好！</h3>
@@ -173,8 +176,13 @@ export default function AIChat() {
                           fill="none"
                           stroke="currentColor"
                           strokeWidth={2}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                         >
-                          <path d="M12 2a8 8 0 00-8 8c0 3.4 2.1 6.3 5 7.5V20a1 1 0 001 1h4a1 1 0 001-1v-2.5c2.9-1.2 5-4.1 5-7.5a8 8 0 00-8-8z" />
+                          <rect x="3" y="11" width="18" height="10" rx="2" />
+                          <circle cx="9" cy="16" r="1" fill="currentColor" stroke="none" />
+                          <circle cx="15" cy="16" r="1" fill="currentColor" stroke="none" />
+                          <path d="M8 11V7a4 4 0 118 0v4" />
                         </svg>
                       </div>
                       <div
@@ -329,7 +337,7 @@ export default function AIChat() {
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="輸入你的問題..."
+            placeholder="歡迎詢問任何對今天活動的任何問題！"
             rows={1}
             maxLength={500}
             disabled={isLoading}

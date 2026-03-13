@@ -9,13 +9,17 @@ import type { AgendaItemSummary } from "@/types/dto";
  * when the activity_state points to a detailed staff item.
  */
 function mapStaffSortToParticipantSort(staffSort: number): number | null {
-  if (staffSort >= 7 && staffSort <= 8) return 101;   // 報到
+  if (staffSort >= 7 && staffSort <= 8) return 101;    // 報到
   if (staffSort === 9) return 102;                      // 分組
-  if (staffSort >= 10 && staffSort <= 13) return 103;   // Seminar
-  if (staffSort >= 14 && staffSort <= 16) return 104;   // Idea to One
-  if (staffSort >= 17 && staffSort <= 20) return 105;   // Pitch
-  if (staffSort >= 21 && staffSort <= 23) return 106;   // 募資
-  if (staffSort === 24) return 107;                      // 大合照
+  if (staffSort >= 10 && staffSort <= 11) return 103;   // 上哲 S2P + 休息
+  if (staffSort >= 12 && staffSort <= 13) return 104;   // Jeremy How to Pitch + 遊戲規則
+  if (staffSort === 14) return 105;                     // 領午餐
+  if (staffSort >= 15 && staffSort <= 16) return 106;   // Prototype 衝刺
+  if (staffSort >= 17 && staffSort <= 18) return 107;   // Pitch Round A + 休息
+  if (staffSort >= 19 && staffSort <= 20) return 108;   // Pitch Round B + 投票
+  if (staffSort === 21) return 109;                     // 投資時間
+  if (staffSort === 22) return 110;                     // 優秀作品舞台分享
+  if (staffSort >= 23 && staffSort <= 24) return 111;   // 活動收尾
   return null; // Before event or after event — no participant item current
 }
 
