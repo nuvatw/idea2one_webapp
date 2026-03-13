@@ -38,7 +38,6 @@ export default async function StaffDashboardPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const session = await requireStaffIdentity();
-  const lastSyncedAt = new Date().toISOString();
   const params = await searchParams;
 
   // Parse question param for Q&A tab deep link
@@ -144,11 +143,8 @@ export default async function StaffDashboardPage({
 
   return (
     <div className="min-h-screen bg-surface">
-      <StaffTopBar
-        staffName={session.selectedStaffName}
-        lastSyncedAt={lastSyncedAt}
-      />
-      <StaffTabShell>{tabContent}</StaffTabShell>
+      <StaffTopBar staffName={session.selectedStaffName} />
+      <StaffTabShell staffName={session.selectedStaffName}>{tabContent}</StaffTabShell>
     </div>
   );
 }
