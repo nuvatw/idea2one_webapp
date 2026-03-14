@@ -9,6 +9,8 @@ import QuestionList from "./QuestionList";
 import FormalQuestionComposer from "./FormalQuestionComposer";
 import QuestionDetailModal from "./QuestionDetailModal";
 
+const PAGE_SIZE = 10;
+
 interface QAPageClientProps {
   questions: QuestionSummary[];
   participantCode: string;
@@ -44,6 +46,12 @@ export default function QAPageClient({
   );
   const [modalLoading, setModalLoading] = useState(false);
 
+  // Composing mode: show form, hide question list
+  const [isComposing, setIsComposing] = useState(!!initialPrefill);
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+
   // AI handoff prefill state
   const [composerPrefill, setComposerPrefill] = useState<string>(
     initialPrefill ?? ""
@@ -56,6 +64,7 @@ export default function QAPageClient({
   const handleFilterChange = useCallback(
     (newFilters: QAFilterState) => {
       setFilters(newFilters);
+      setCurrentPage(1); // Reset to first page on filter change
 
       const params = new URLSearchParams(searchParams.toString());
       if (newFilters.q) params.set("q", newFilters.q);
@@ -121,6 +130,11 @@ export default function QAPageClient({
     });
   }, [searchParams, router]);
 
+  // Toggle compose mode
+  const handleToggleCompose = useCallback(() => {
+    setIsComposing((prev) => !prev);
+  }, []);
+
   // Handle new question created — switch to "my questions" filter so user sees it
   const handleQuestionCreated = useCallback(
     (_questionCode: string) => {
@@ -128,9 +142,13 @@ export default function QAPageClient({
       setComposerPrefill("");
       setComposerSource(undefined);
 
+      // Exit composing mode
+      setIsComposing(false);
+
       // Switch filter to "mine" so the user sees their submitted question
       const newFilters: QAFilterState = { q: "", scope: "mine", status: "all" };
       setFilters(newFilters);
+      setCurrentPage(1);
 
       // Refresh the page to get the new question in the SSR data
       startTransition(() => {
@@ -174,6 +192,14 @@ export default function QAPageClient({
     return result;
   }, [questions, filters, participantCode]);
 
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filteredQuestions.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedQuestions = filteredQuestions.slice(
+    (safePage - 1) * PAGE_SIZE,
+    safePage * PAGE_SIZE
+  );
+
   // Determine empty message
   const emptyMessage = useMemo(() => {
     if (questions.length === 0) return "目前還沒有公開問題";
@@ -183,21 +209,38 @@ export default function QAPageClient({
 
   return (
     <div className="space-y-4">
-      <QAFilterBar filters={filters} onChange={handleFilterChange} />
-
-      <QuestionList
-        items={filteredQuestions}
-        onOpenQuestion={handleOpenQuestion}
-        emptyMessage={emptyMessage}
+      <QAFilterBar
+        filters={filters}
+        onChange={handleFilterChange}
+        isComposing={isComposing}
+        onToggleCompose={handleToggleCompose}
       />
 
-      <div id="formal-question-composer">
-        <FormalQuestionComposer
-          prefill={composerPrefill || undefined}
-          source={composerSource}
-          onQuestionCreated={handleQuestionCreated}
-        />
-      </div>
+      {isComposing ? (
+        <div id="formal-question-composer">
+          <FormalQuestionComposer
+            prefill={composerPrefill || undefined}
+            source={composerSource}
+            onQuestionCreated={handleQuestionCreated}
+          />
+        </div>
+      ) : (
+        <>
+          <QuestionList
+            items={paginatedQuestions}
+            onOpenQuestion={handleOpenQuestion}
+            emptyMessage={emptyMessage}
+          />
+
+          {totalPages > 1 && (
+            <Pagination
+              currentPage={safePage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
+          )}
+        </>
+      )}
 
       <QuestionDetailModal
         thread={modalThread}
@@ -207,4 +250,103 @@ export default function QAPageClient({
       />
     </div>
   );
+}
+
+/* ── Pagination ── */
+
+function Pagination({
+  currentPage,
+  totalPages,
+  onPageChange,
+}: {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}) {
+  const pages = buildPageNumbers(currentPage, totalPages);
+
+  return (
+    <nav aria-label="分頁" className="flex items-center justify-center gap-1 pt-2">
+      <button
+        type="button"
+        disabled={currentPage <= 1}
+        onClick={() => onPageChange(currentPage - 1)}
+        className="min-h-[44px] min-w-[44px] rounded-lg px-2 text-sm text-warm-500 transition-colors hover:bg-warm-100 disabled:cursor-not-allowed disabled:opacity-30"
+        aria-label="上一頁"
+      >
+        &lsaquo;
+      </button>
+
+      {pages.map((p, i) =>
+        p === "..." ? (
+          <span
+            key={`ellipsis-${i}`}
+            className="min-h-[44px] min-w-[36px] flex items-center justify-center text-sm text-warm-400"
+          >
+            ...
+          </span>
+        ) : (
+          <button
+            key={p}
+            type="button"
+            onClick={() => onPageChange(p as number)}
+            className={`min-h-[44px] min-w-[44px] rounded-lg px-2 text-sm font-medium transition-colors ${
+              p === currentPage
+                ? "bg-primary-500 text-white"
+                : "text-warm-600 hover:bg-warm-100"
+            }`}
+            aria-current={p === currentPage ? "page" : undefined}
+          >
+            {p}
+          </button>
+        )
+      )}
+
+      <button
+        type="button"
+        disabled={currentPage >= totalPages}
+        onClick={() => onPageChange(currentPage + 1)}
+        className="min-h-[44px] min-w-[44px] rounded-lg px-2 text-sm text-warm-500 transition-colors hover:bg-warm-100 disabled:cursor-not-allowed disabled:opacity-30"
+        aria-label="下一頁"
+      >
+        &rsaquo;
+      </button>
+    </nav>
+  );
+}
+
+/**
+ * Build page number array with ellipsis, e.g. [1, 2, 3, '...', 10]
+ * Always shows first, last, and up to 2 pages around current.
+ */
+function buildPageNumbers(
+  current: number,
+  total: number
+): (number | "...")[] {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+
+  const pages: (number | "...")[] = [];
+  const around = new Set<number>();
+
+  // Always show first and last
+  around.add(1);
+  around.add(total);
+
+  // Pages around current
+  for (let i = current - 2; i <= current + 2; i++) {
+    if (i >= 1 && i <= total) around.add(i);
+  }
+
+  const sorted = [...around].sort((a, b) => a - b);
+
+  for (let i = 0; i < sorted.length; i++) {
+    if (i > 0 && sorted[i] - sorted[i - 1] > 1) {
+      pages.push("...");
+    }
+    pages.push(sorted[i]);
+  }
+
+  return pages;
 }

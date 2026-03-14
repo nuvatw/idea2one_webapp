@@ -11,6 +11,8 @@ export interface QAFilterState {
 interface QAFilterBarProps {
   filters: QAFilterState;
   onChange: (filters: QAFilterState) => void;
+  isComposing: boolean;
+  onToggleCompose: () => void;
 }
 
 /**
@@ -18,7 +20,7 @@ interface QAFilterBarProps {
  * Handles keyword search, scope toggle (all/mine), and status toggle (all/pending).
  * Per Spec: input 16px min, hit area 44x44 min.
  */
-export default function QAFilterBar({ filters, onChange }: QAFilterBarProps) {
+export default function QAFilterBar({ filters, onChange, isComposing, onToggleCompose }: QAFilterBarProps) {
   const handleSearchChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       onChange({ ...filters, q: e.target.value });
@@ -67,8 +69,8 @@ export default function QAFilterBar({ filters, onChange }: QAFilterBarProps) {
         </svg>
       </div>
 
-      {/* Filter toggles — min 44px hit area */}
-      <div className="flex gap-2">
+      {/* Filter toggles + ask button — min 44px hit area */}
+      <div className="flex items-center gap-2">
         {/* Scope toggles */}
         <div className="flex rounded-xl border border-warm-200 bg-warm-50 p-0.5">
           <button
@@ -120,6 +122,19 @@ export default function QAFilterBar({ filters, onChange }: QAFilterBarProps) {
             已回答
           </button>
         </div>
+
+        {/* Ask question button — pushed to the right */}
+        <button
+          type="button"
+          onClick={onToggleCompose}
+          className={`ml-auto min-h-[44px] rounded-xl px-4 py-2 text-sm font-medium transition-colors ${
+            isComposing
+              ? "bg-warm-200 text-warm-700"
+              : "bg-primary-500 text-white hover:bg-primary-600"
+          }`}
+        >
+          {isComposing ? "返回列表" : "我想問問題"}
+        </button>
       </div>
     </div>
   );
