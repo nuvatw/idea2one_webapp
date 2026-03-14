@@ -3,6 +3,7 @@
 import { useEffect, useCallback, useRef } from "react";
 import type { QuestionDetail } from "@/types/dto";
 import StatusBadge from "@/components/shared/StatusBadge";
+import AIChatMarkdown from "@/components/participant/AIChatMarkdown";
 
 interface QuestionDetailModalProps {
   thread: QuestionDetail | null;
@@ -126,9 +127,9 @@ export default function QuestionDetailModal({
                     </span>
                   )}
                 </div>
-                <p className="whitespace-pre-wrap text-sm leading-relaxed text-warm-800">
-                  {thread.content}
-                </p>
+                <div className="text-sm leading-relaxed text-warm-800">
+                  <AIChatMarkdown content={thread.content} />
+                </div>
               </div>
 
               {/* Divider */}
@@ -149,9 +150,9 @@ export default function QuestionDetailModal({
                         key={answer.id}
                         className="rounded-xl border border-warm-100 bg-warm-50 p-3"
                       >
-                        <p className="whitespace-pre-wrap text-sm leading-relaxed text-warm-700">
-                          {answer.body}
-                        </p>
+                        <div className="text-sm leading-relaxed text-warm-700">
+                          <AIChatMarkdown content={answer.body} />
+                        </div>
                         <div className="mt-2 flex items-center gap-2 text-xs text-warm-400">
                           <span className="font-medium text-warm-500">
                             {answer.created_by_staff_name}

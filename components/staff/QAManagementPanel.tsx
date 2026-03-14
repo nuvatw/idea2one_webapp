@@ -18,6 +18,7 @@ import {
 } from "@/lib/actions/answers";
 import { deleteQuestion } from "@/lib/actions/questions";
 import StatusBadge from "@/components/shared/StatusBadge";
+import AIChatMarkdown from "@/components/participant/AIChatMarkdown";
 import MutationTimeoutBanner from "@/components/shared/MutationTimeoutBanner";
 import Spinner from "@/components/shared/Spinner";
 
@@ -389,9 +390,9 @@ function StaffQuestionModal({
             <div className="space-y-4">
               {/* Question content */}
               <div>
-                <p className="whitespace-pre-wrap text-sm leading-relaxed text-warm-800">
-                  {thread.content}
-                </p>
+                <div className="text-sm leading-relaxed text-warm-800">
+                  <AIChatMarkdown content={thread.content} />
+                </div>
                 <div className="mt-2 text-xs text-warm-400">
                   #{thread.participant_code} · {formatDateTime(thread.created_at)}
                 </div>
@@ -423,9 +424,9 @@ function StaffQuestionModal({
                           />
                         ) : (
                           <>
-                            <p className="whitespace-pre-wrap text-sm leading-relaxed text-warm-700">
-                              {answer.body}
-                            </p>
+                            <div className="text-sm leading-relaxed text-warm-700">
+                              <AIChatMarkdown content={answer.body} />
+                            </div>
                             <div className="mt-2 flex items-center justify-between">
                               <div className="text-xs text-warm-400">
                                 <span className="font-medium text-warm-500">
