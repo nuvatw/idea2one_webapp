@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import type { AIAskResponse, AIConversationHistoryResponse } from "@/types/dto";
+import AIChatMarkdown from "./AIChatMarkdown";
 
 type ChatMessage = {
   id: string;
@@ -245,7 +246,7 @@ export default function AIChat() {
                               : "bg-surface-raised text-warm-800"
                         }`}
                       >
-                        {msg.content}
+                        <AIChatMarkdown content={msg.content} />
                       </div>
                     </div>
 
