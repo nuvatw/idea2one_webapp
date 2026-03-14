@@ -248,10 +248,16 @@ export default function QAPageClient({
         onClose={handleCloseModal}
         loading={modalLoading}
         participantCode={participantCode}
-        onCommentCreated={() => {
-          // Re-fetch the question detail to show the new comment
+        onCommentCreated={async () => {
+          // Re-fetch question detail without resetting modal loading state
           if (modalThread?.question_code) {
-            handleOpenQuestion(modalThread.question_code);
+            try {
+              const { getQuestionDetail } = await import("@/lib/dal/questions");
+              const detail = await getQuestionDetail(modalThread.question_code);
+              setModalThread(detail);
+            } catch {
+              // silently fail — user can close and reopen
+            }
           }
         }}
       />
