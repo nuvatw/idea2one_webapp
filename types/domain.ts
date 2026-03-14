@@ -125,3 +125,23 @@ export interface AiLog {
   related_question_codes: string[] | null;
   created_at: string;
 }
+
+export type AiMessageRole = "user" | "assistant";
+
+export interface AiConversation {
+  id: string;
+  participant_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AiMessage {
+  id: string;
+  conversation_id: string;
+  role: AiMessageRole;
+  content: string;
+  outcome: AiOutcome | null;
+  related_question_codes: string[] | null;
+  draft_question: string | null;
+  created_at: string;
+}

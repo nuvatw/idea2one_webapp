@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import type { AIAskResponse } from "@/types/dto";
+import type { AIAskResponse, AIConversationHistoryResponse } from "@/types/dto";
 import { useAIModal } from "./AIModalProvider";
 
 type ChatMessage = {
@@ -24,24 +24,59 @@ export default function AIAssistantModal() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const historyLoadedRef = useRef(false);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
-  // Lock body scroll + focus input when modal opens
+  // Load conversation history when modal opens (only once)
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-      setMessages([]);
-      setInput("");
-      setTimeout(() => inputRef.current?.focus(), 350);
+    if (!isOpen) return;
+
+    document.body.style.overflow = "hidden";
+    setInput("");
+
+    if (!historyLoadedRef.current) {
+      historyLoadedRef.current = true;
+      setIsLoadingHistory(true);
+      fetch("/api/ai/history")
+        .then(async (res) => {
+          if (!res.ok) {
+            if (res.status === 401) {
+              window.location.href = "/login";
+            }
+            return;
+          }
+          const data: AIConversationHistoryResponse = await res.json();
+          if (data.messages.length > 0) {
+            setMessages(
+              data.messages.map((msg) => ({
+                id: msg.id,
+                role: msg.role,
+                content: msg.content,
+                outcome: msg.outcome ?? undefined,
+                relatedQuestions: msg.relatedQuestions,
+                draftQuestion: msg.draftQuestion,
+              }))
+            );
+          }
+        })
+        .catch(() => {
+          // Silently fail
+        })
+        .finally(() => {
+          setIsLoadingHistory(false);
+          setTimeout(() => inputRef.current?.focus(), 350);
+        });
     } else {
-      document.body.style.overflow = "";
+      setTimeout(() => inputRef.current?.focus(), 350);
     }
+
     return () => {
       document.body.style.overflow = "";
     };
@@ -167,7 +202,17 @@ export default function AIAssistantModal() {
 
           {/* Messages area */}
           <div className="flex-1 overflow-y-auto px-4 py-5">
-            {messages.length === 0 ? (
+            {isLoadingHistory ? (
+              /* Loading history state */
+              <div className="flex h-full flex-col items-center justify-center">
+                <div className="flex gap-1.5">
+                  <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-primary-300 [animation-delay:0ms]" />
+                  <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-primary-300 [animation-delay:150ms]" />
+                  <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-primary-300 [animation-delay:300ms]" />
+                </div>
+                <p className="mt-3 text-sm text-warm-400">載入對話紀錄中...</p>
+              </div>
+            ) : messages.length === 0 ? (
               /* Empty / Welcome state */
               <div className="flex h-full flex-col items-center justify-center">
                 <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-primary-100">
@@ -387,7 +432,7 @@ export default function AIAssistantModal() {
                 placeholder="輸入你的問題..."
                 rows={1}
                 maxLength={500}
-                disabled={isLoading}
+                disabled={isLoading || isLoadingHistory}
                 className="flex-1 resize-none rounded-2xl border border-warm-200 bg-surface px-4 py-3 text-base leading-normal placeholder:text-warm-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 disabled:bg-warm-50 disabled:text-warm-400"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
@@ -408,7 +453,7 @@ export default function AIAssistantModal() {
               />
               <button
                 onClick={() => handleSend()}
-                disabled={isLoading || !input.trim()}
+                disabled={isLoading || isLoadingHistory || !input.trim()}
                 className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-primary-500 text-white transition-all hover:bg-primary-600 disabled:bg-warm-200 disabled:text-warm-400 active:scale-95"
                 aria-label="送出訊息"
               >

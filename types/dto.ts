@@ -117,6 +117,26 @@ export interface AIAskResponse {
     contentPreview: string;
   }>;
   draftQuestion?: string;
+  conversationId?: string;
+}
+
+export interface AIMessageDTO {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  outcome: "answered" | "uncertain" | "out_of_scope" | "error" | null;
+  relatedQuestions: Array<{
+    code: string;
+    status: "pending" | "answered";
+    contentPreview: string;
+  }>;
+  draftQuestion?: string;
+  createdAt: string;
+}
+
+export interface AIConversationHistoryResponse {
+  conversationId: string;
+  messages: AIMessageDTO[];
 }
 
 // --- Participant Home Payload ---

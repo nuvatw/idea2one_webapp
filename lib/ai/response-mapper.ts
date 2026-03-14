@@ -77,6 +77,15 @@ function validateOutcome(raw: string | undefined): AIAskResponse["outcome"] {
 async function enrichRelatedQuestions(
   codes: string[]
 ): Promise<AIAskResponse["relatedQuestions"]> {
+  return enrichRelatedQuestionCodes(codes);
+}
+
+/**
+ * Exported version for use by other modules (e.g., history API).
+ */
+export async function enrichRelatedQuestionCodes(
+  codes: string[]
+): Promise<AIAskResponse["relatedQuestions"]> {
   if (codes.length === 0) return [];
 
   const supabase = createServerSupabaseClient();
