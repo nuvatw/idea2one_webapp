@@ -17,7 +17,7 @@ type ChatMessage = {
 const SUGGESTED_QUESTIONS = [
   "現在進行到哪個階段了？",
   "下一個活動是什麼？",
-  "午餐怎麼領取？",
+  "怎麼在本機跑這個專案？",
 ];
 
 export default function AIAssistantModal() {
