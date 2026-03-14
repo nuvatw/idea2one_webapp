@@ -67,8 +67,11 @@ export interface QuestionDetail {
 export interface AnswerDetail {
   id: string;
   body: string;
-  created_by_staff_name: string;
-  updated_by_staff_name: string;
+  /** Staff name if answer is from staff, null if from participant */
+  created_by_staff_name: string | null;
+  updated_by_staff_name: string | null;
+  /** Participant code if answer is from participant, null if from staff */
+  created_by_participant_code: string | null;
   created_at: string;
   updated_at: string;
 }

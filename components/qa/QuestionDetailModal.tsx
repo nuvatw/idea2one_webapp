@@ -1,15 +1,18 @@
 "use client";
 
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useRef, useState, useActionState } from "react";
 import type { QuestionDetail } from "@/types/dto";
 import StatusBadge from "@/components/shared/StatusBadge";
 import AIChatMarkdown from "@/components/participant/AIChatMarkdown";
+import { createParticipantComment, type CreateAnswerResult } from "@/lib/actions/answers";
 
 interface QuestionDetailModalProps {
   thread: QuestionDetail | null;
   open: boolean;
   onClose: () => void;
   loading?: boolean;
+  participantCode?: string;
+  onCommentCreated?: () => void;
 }
 
 /**
@@ -22,8 +25,33 @@ export default function QuestionDetailModal({
   open,
   onClose,
   loading,
+  participantCode,
+  onCommentCreated,
 }: QuestionDetailModalProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const [commentText, setCommentText] = useState("");
+
+  const [formState, formAction, isPending] = useActionState<CreateAnswerResult | null, FormData>(
+    createParticipantComment,
+    null
+  );
+
+  // Reset form on success
+  useEffect(() => {
+    if (formState?.success) {
+      setCommentText("");
+      formRef.current?.reset();
+      onCommentCreated?.();
+    }
+  }, [formState, onCommentCreated]);
+
+  // Reset comment text when modal closes or thread changes
+  useEffect(() => {
+    if (!open) {
+      setCommentText("");
+    }
+  }, [open]);
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -135,7 +163,7 @@ export default function QuestionDetailModal({
               {/* Divider */}
               <hr className="border-warm-100" />
 
-              {/* Answers */}
+              {/* Answers / Comments */}
               <div>
                 <h4 className="mb-3 text-xs font-semibold uppercase tracking-wide text-warm-500">
                   回覆（{thread.answers.length}）
@@ -145,37 +173,93 @@ export default function QuestionDetailModal({
                   <p className="text-sm text-warm-500">尚未收到回覆</p>
                 ) : (
                   <div className="space-y-3">
-                    {thread.answers.map((answer) => (
-                      <div
-                        key={answer.id}
-                        className="rounded-xl border border-warm-100 bg-warm-50 p-3"
-                      >
-                        <div className="text-sm leading-relaxed text-warm-700">
-                          <AIChatMarkdown content={answer.body} />
-                        </div>
-                        <div className="mt-2 flex items-center gap-2 text-xs text-warm-400">
-                          <span className="font-medium text-warm-500">
-                            {answer.created_by_staff_name}
-                          </span>
-                          <span>·</span>
-                          <span>{formatDateTime(answer.created_at)}</span>
-                          {answer.updated_at !== answer.created_at && (
-                            <>
-                              <span>·</span>
-                              <span>
-                                已編輯 by {answer.updated_by_staff_name}
+                    {thread.answers.map((answer) => {
+                      const isStaffAnswer = !!answer.created_by_staff_name;
+                      return (
+                        <div
+                          key={answer.id}
+                          className={`rounded-xl border p-3 ${
+                            isStaffAnswer
+                              ? "border-warm-100 bg-warm-50"
+                              : "border-primary-100 bg-primary-50/30"
+                          }`}
+                        >
+                          <div className="text-sm leading-relaxed text-warm-700">
+                            <AIChatMarkdown content={answer.body} />
+                          </div>
+                          <div className="mt-2 flex items-center gap-2 text-xs text-warm-400">
+                            {isStaffAnswer ? (
+                              <span className="font-medium text-warm-500">
+                                {answer.created_by_staff_name}
                               </span>
-                            </>
-                          )}
+                            ) : (
+                              <span className="font-medium text-primary-600">
+                                #{answer.created_by_participant_code}
+                              </span>
+                            )}
+                            <span>·</span>
+                            <span>{formatDateTime(answer.created_at)}</span>
+                            {isStaffAnswer && answer.updated_at !== answer.created_at && answer.updated_by_staff_name && (
+                              <>
+                                <span>·</span>
+                                <span>
+                                  已編輯 by {answer.updated_by_staff_name}
+                                </span>
+                              </>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
             </div>
           )}
         </div>
+
+        {/* Comment form for participants */}
+        {!loading && thread && participantCode && (
+          <div className="border-t border-warm-200 px-4 py-3">
+            {formState && !formState.success && formState.error && (
+              <p className="mb-2 text-xs text-red-500">{formState.error}</p>
+            )}
+            <form ref={formRef} action={formAction} className="flex items-end gap-2">
+              <input type="hidden" name="questionId" value={thread.id} />
+              <textarea
+                name="body"
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder="留言..."
+                maxLength={2000}
+                rows={1}
+                className="flex-1 resize-none rounded-xl border border-warm-200 bg-white px-3 py-2 text-sm text-warm-800 placeholder:text-warm-400 focus:border-primary-300 focus:outline-none focus:ring-1 focus:ring-primary-300"
+                onInput={(e) => {
+                  const el = e.currentTarget;
+                  el.style.height = "auto";
+                  el.style.height = Math.min(el.scrollHeight, 120) + "px";
+                }}
+              />
+              <button
+                type="submit"
+                disabled={isPending || !commentText.trim()}
+                className="flex min-h-[40px] min-w-[40px] items-center justify-center rounded-xl bg-primary-500 text-white transition-colors hover:bg-primary-600 disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label="送出留言"
+              >
+                {isPending ? (
+                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                ) : (
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" />
+                  </svg>
+                )}
+              </button>
+            </form>
+          </div>
+        )}
       </div>
     </div>
   );

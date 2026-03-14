@@ -106,7 +106,7 @@ export async function getQuestionDetail(
     return null;
   }
 
-  // Fetch answers with staff names
+  // Fetch answers with staff names and participant codes
   const { data: answers, error: answersError } = await supabase
     .from("answers")
     .select(`
@@ -114,8 +114,11 @@ export async function getQuestionDetail(
       body,
       created_at,
       updated_at,
+      created_by_staff_id,
+      created_by_participant_id,
       created_by:staff_members!answers_created_by_staff_id_fkey(name),
-      updated_by:staff_members!answers_updated_by_staff_id_fkey(name)
+      updated_by:staff_members!answers_updated_by_staff_id_fkey(name),
+      comment_by:participants!answers_created_by_participant_id_fkey(participant_code)
     `)
     .eq("question_id", question.id)
     .order("created_at", { ascending: true });
@@ -131,11 +134,13 @@ export async function getQuestionDetail(
   const answerDetails: AnswerDetail[] = (answers ?? []).map((a) => {
     const createdBy = a.created_by as unknown as { name: string } | null;
     const updatedBy = a.updated_by as unknown as { name: string } | null;
+    const commentBy = a.comment_by as unknown as { participant_code: string } | null;
     return {
       id: a.id,
       body: a.body,
-      created_by_staff_name: createdBy?.name ?? "未知",
-      updated_by_staff_name: updatedBy?.name ?? "未知",
+      created_by_staff_name: createdBy?.name ?? null,
+      updated_by_staff_name: updatedBy?.name ?? null,
+      created_by_participant_code: commentBy?.participant_code ?? null,
       created_at: a.created_at,
       updated_at: a.updated_at,
     };

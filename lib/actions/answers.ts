@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireStaffIdentity } from "@/lib/dal/auth-check";
+import { requireStaffIdentity, requireParticipantSession } from "@/lib/dal/auth-check";
 import { createServerSupabaseClient } from "@/lib/utils/supabase";
 
 export interface CreateAnswerResult {
@@ -193,6 +193,62 @@ export async function deleteAnswer(
         updated_at: new Date().toISOString(),
       })
       .eq("id", answer.question_id);
+  }
+
+  revalidatePath("/qa");
+  revalidatePath("/staff");
+
+  return { success: true };
+}
+
+/**
+ * Server Action: Create a participant comment on a question.
+ * Callable by authenticated participants (法法).
+ */
+export async function createParticipantComment(
+  _prevState: CreateAnswerResult | null,
+  formData: FormData
+): Promise<CreateAnswerResult> {
+  const session = await requireParticipantSession();
+  const questionId = formData.get("questionId") as string;
+  const body = (formData.get("body") as string)?.trim();
+
+  if (!questionId) {
+    return { success: false, error: "缺少問題 ID" };
+  }
+
+  if (!body) {
+    return { success: false, error: "請輸入留言內容" };
+  }
+
+  if (body.length > 2000) {
+    return { success: false, error: "留言內容不可超過 2000 字" };
+  }
+
+  const supabase = createServerSupabaseClient();
+
+  // Verify question exists
+  const { data: question, error: fetchError } = await supabase
+    .from("questions")
+    .select("id")
+    .eq("id", questionId)
+    .single();
+
+  if (fetchError || !question) {
+    return { success: false, error: "找不到此問題" };
+  }
+
+  // Insert comment as participant
+  const { error: insertError } = await supabase.from("answers").insert({
+    question_id: questionId,
+    body,
+    created_by_participant_id: session.participantId,
+    updated_by_participant_id: session.participantId,
+  });
+
+  if (insertError) {
+    console.error("Failed to create participant comment:", insertError);
+    return { success: false, error: "留言失敗，請稍後再試" };
   }
 
   revalidatePath("/qa");

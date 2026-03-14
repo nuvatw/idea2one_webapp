@@ -429,11 +429,17 @@ function StaffQuestionModal({
                             </div>
                             <div className="mt-2 flex items-center justify-between">
                               <div className="text-xs text-warm-400">
-                                <span className="font-medium text-warm-500">
-                                  {answer.created_by_staff_name}
-                                </span>
+                                {answer.created_by_staff_name ? (
+                                  <span className="font-medium text-warm-500">
+                                    {answer.created_by_staff_name}
+                                  </span>
+                                ) : (
+                                  <span className="font-medium text-primary-600">
+                                    #{answer.created_by_participant_code}
+                                  </span>
+                                )}
                                 <span> · {formatDateTime(answer.created_at)}</span>
-                                {answer.updated_at !== answer.created_at && (
+                                {answer.created_by_staff_name && answer.updated_at !== answer.created_at && answer.updated_by_staff_name && (
                                   <span>
                                     {" "}· 已編輯 by {answer.updated_by_staff_name}
                                   </span>

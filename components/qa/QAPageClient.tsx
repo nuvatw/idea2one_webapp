@@ -247,6 +247,13 @@ export default function QAPageClient({
         open={modalOpen}
         onClose={handleCloseModal}
         loading={modalLoading}
+        participantCode={participantCode}
+        onCommentCreated={() => {
+          // Re-fetch the question detail to show the new comment
+          if (modalThread?.question_code) {
+            handleOpenQuestion(modalThread.question_code);
+          }
+        }}
       />
     </div>
   );

@@ -94,8 +94,10 @@ export interface Answer {
   id: string;
   question_id: string;
   body: string;
-  created_by_staff_id: string;
-  updated_by_staff_id: string;
+  created_by_staff_id: string | null;
+  updated_by_staff_id: string | null;
+  created_by_participant_id: string | null;
+  updated_by_participant_id: string | null;
   created_at: string;
   updated_at: string;
 }
