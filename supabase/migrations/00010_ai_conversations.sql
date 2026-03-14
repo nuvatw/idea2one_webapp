@@ -6,7 +6,7 @@
 -- ===========================================
 
 CREATE TABLE ai_conversations (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   participant_id UUID NOT NULL REFERENCES participants(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -23,7 +23,7 @@ COMMENT ON TABLE ai_conversations IS 'One conversation per participant for the e
 CREATE TYPE ai_message_role AS ENUM ('user', 'assistant');
 
 CREATE TABLE ai_messages (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   conversation_id UUID NOT NULL REFERENCES ai_conversations(id) ON DELETE CASCADE,
   role ai_message_role NOT NULL,
   content TEXT NOT NULL,
